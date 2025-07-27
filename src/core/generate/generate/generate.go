@@ -32,7 +32,6 @@ import (
 	"github.com/minauteur/go-generate-fast/src/utils/str"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/exp/slices"
 )
 
@@ -43,20 +42,6 @@ var (
 	generateSkipFlag string         // generate -skip flag
 	generateSkipRE   *regexp.Regexp // compiled expression for -skip
 )
-
-func init() {
-	config := zap.NewProductionConfig()
-	config.OutputPaths = []string{"stdout"}
-	config.ErrorOutputPaths = []string{"stdout"}
-	config.Encoding = "console"
-	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	config.EncoderConfig.TimeKey = zapcore.OmitKey
-	config.EncoderConfig.CallerKey = ""
-	config.EncoderConfig.StacktraceKey = ""
-	config.EncoderConfig.LevelKey = ""
-	zapi := zap.Must(config.Build())
-	zap.ReplaceGlobals(zapi)
-}
 
 func RunGenerate(args []string) {
 	if generateRunFlag != "" {
@@ -333,7 +318,7 @@ func (g *Generator) run() (ok bool) {
 		if err != nil {
 			zap.S().Fatal("cannot compute relative dir: %s", err)
 		}
-		zap.S().Infof("%s: %s (%s)", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
+		fmt.Printf("File: %s, Command: %s (%s)\n", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
 
 	}
 
