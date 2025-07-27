@@ -285,9 +285,11 @@ func getExecutableDetails(ExecutablePath string, includeModTime bool, includeSiz
 
 	execInfo := fmt.Sprint(ExecutablePath)
 	if includeSize {
+		zap.S().Debugf("Executable file size: %d", info.Size())
 		execInfo += fmt.Sprintf("%019d", info.Size())
 	}
 	if includeModTime {
+		zap.S().Debugf("Executable file mod time: %s", info.ModTime().Format(time.RFC3339))
 		execInfo += info.ModTime().Format(time.RFC3339)
 	}
 
