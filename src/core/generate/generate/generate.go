@@ -31,7 +31,7 @@ import (
 	"github.com/minauteur/go-generate-fast/src/utils/fs"
 	"github.com/minauteur/go-generate-fast/src/utils/str"
 
-	zapl "go.uber.org/zap"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/exp/slices"
 )
@@ -42,20 +42,20 @@ var (
 
 	generateSkipFlag string         // generate -skip flag
 	generateSkipRE   *regexp.Regexp // compiled expression for -skip
-	zap              *zapl.Logger
 )
 
 func init() {
-	config := zapl.NewProductionConfig()
+	config := zap.NewProductionConfig()
 	config.OutputPaths = []string{"stdout"}
-	config.ErrorOutputPaths = []string{"stderr"}
+	config.ErrorOutputPaths = []string{"stdout"}
 	config.Encoding = "console"
 	config.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	config.EncoderConfig.TimeKey = zapcore.OmitKey
 	config.EncoderConfig.CallerKey = ""
 	config.EncoderConfig.StacktraceKey = ""
 	config.EncoderConfig.LevelKey = ""
-	zap = zapl.Must(config.Build())
+	zapi := zap.Must(config.Build())
+	zap.ReplaceGlobals(zapi)
 }
 
 func RunGenerate(args []string) {
@@ -137,7 +137,7 @@ func (g *Generator) run() (ok bool) {
 		}
 	}()
 	if cfg.BuildV {
-		zap.Debug(g.path)
+		zap.S().Debug(g.path)
 		// fmt.Fprintf(os.Stderr, "%s\n", g.path)
 	}
 
@@ -219,7 +219,7 @@ func (g *Generator) run() (ok bool) {
 		}
 		// Run the command line.
 		if cfg.BuildN || cfg.BuildX {
-			zap.Sugar().Info(opts.Command())
+			zap.S().Info(opts.Command())
 		}
 		if cfg.BuildN {
 			continue
@@ -238,7 +238,7 @@ func (g *Generator) run() (ok bool) {
 		if err == nil {
 			opts.ExecutablePath = executablePath
 		} else {
-			zap.Sugar().Debugf("Cannot find executable path for %s", words[0])
+			zap.S().Debugf("Cannot find executable path for %s", words[0])
 			opts.ExecutablePath = words[0]
 		}
 
@@ -249,13 +249,13 @@ func (g *Generator) run() (ok bool) {
 
 		cwd, err := os.Getwd()
 		if err != nil {
-			zap.Sugar().Fatal("cannot get working directory: %s", err)
+			zap.S().Fatal("cannot get working directory: %s", err)
 		}
 
 		// change to the command being run directory, so plugins can work with relative paths to it
 		err = os.Chdir(opts.Dir())
 		if err != nil {
-			zap.Sugar().Fatal("cannot chdir to command directory: %s", err)
+			zap.S().Fatal("cannot chdir to command directory: %s", err)
 		}
 
 		if config.Get().Disable {
@@ -265,7 +265,7 @@ func (g *Generator) run() (ok bool) {
 			cacheResult, err = cache.Verify(opts)
 
 			if err != nil {
-				zap.Sugar().Debugf("cannot verify cache: %s", err)
+				zap.S().Debugf("cannot verify cache: %s", err)
 				// cannot verify cache, cannot use save/restore functions
 				runGenerate = true
 			} else if config.Get().ReCache {
@@ -281,7 +281,7 @@ func (g *Generator) run() (ok bool) {
 		if runRestore {
 			err := cache.Restore(cacheResult)
 			if err != nil {
-				zap.Sugar().Errorf("cannot restore cache: %s", err)
+				zap.S().Errorf("cannot restore cache: %s", err)
 				runGenerate = true
 				runSave = true
 			} else {
@@ -310,7 +310,7 @@ func (g *Generator) run() (ok bool) {
 			!config.Get().ForceUseCache {
 			err := cache.Save(cacheResult)
 			if err != nil {
-				zap.Sugar().Errorf("cannot save cache: %s", err)
+				zap.S().Errorf("cannot save cache: %s", err)
 			} else {
 				cachedInfo = append(cachedInfo, "saved")
 			}
@@ -326,14 +326,14 @@ func (g *Generator) run() (ok bool) {
 
 		err = os.Chdir(cwd)
 		if err != nil {
-			zap.Sugar().Fatal("cannot restore working directory: %s", err)
+			zap.S().Fatal("cannot restore working directory: %s", err)
 		}
 
 		relPath, err := filepath.Rel(cwd, g.path)
 		if err != nil {
-			zap.Sugar().Fatal("cannot compute relative dir: %s", err)
+			zap.S().Fatal("cannot compute relative dir: %s", err)
 		}
-		zap.Sugar().WithOptions().Infof("%s: %s (%s)", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
+		zap.S().Infof("%s: %s (%s)", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
 
 	}
 
@@ -449,7 +449,7 @@ var stop = fmt.Errorf("error in generation")
 // It then exits the program (with exit status 1) because generation stops
 // at the first error.
 func (g *Generator) errorf(format string, args ...any) {
-	zap.Sugar().Errorf("%s:%d: %s\n", g.path, g.lineNum, fmt.Sprintf(format, args...))
+	zap.S().Errorf("%s:%d: %s\n", g.path, g.lineNum, fmt.Sprintf(format, args...))
 	panic(stop)
 }
 
@@ -492,7 +492,7 @@ func (g *Generator) exec(opts plugins.GenerateOpts) bool {
 	cmd.Env = str.StringList(os.Environ(), g.env)
 	err := cmd.Run()
 	if err != nil {
-		zap.Sugar().Errorf("running %q: %s", opts.Command(), err)
+		zap.S().Errorf("running %q: %s", opts.Command(), err)
 		return false
 	}
 	return true
@@ -507,12 +507,12 @@ func maybeParseGoRunCommand(opts *plugins.GenerateOpts) bool {
 
 	err := flagSet.Parse(opts.Words)
 	if err != nil {
-		zap.Sugar().Warn("Cannot parse go run arguments: ", err.Error())
+		zap.S().Warn("Cannot parse go run arguments: ", err.Error())
 		return false
 	}
 
 	if len(flagSet.Args()) < 3 {
-		zap.Sugar().Debugf("Cannot parse go run command with <2 args")
+		zap.S().Debugf("Cannot parse go run command with <2 args")
 		return false
 	}
 
