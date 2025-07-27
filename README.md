@@ -1,8 +1,8 @@
 # go-generate-fast
 
-[![build](https://github.com/oNaiPs/go-generate-fast/actions/workflows/build-test.yml/badge.svg)](https://github.com/oNaiPs/go-generate-fast/actions?query=branch%main)
+[![build](https://github.com/minauteur/go-generate-fast/actions/workflows/build-test.yml/badge.svg)](https://github.com/minauteur/go-generate-fast/actions?query=branch%main)
 [![Go Report
-Card](https://goreportcard.com/badge/github.com/oNaiPs/go-generate-fast)](https://goreportcard.com/report/github.com/oNaiPs/go-generate-fast)
+Card](https://goreportcard.com/badge/github.com/minauteur/go-generate-fast)](https://goreportcard.com/report/github.com/minauteur/go-generate-fast)
 
 🚀 Shave off minutes and turn them into seconds for your go generation step 🚀.
 
@@ -13,7 +13,7 @@ Smart enough to understand if your generated files have changed or not,
 `go-generate-fast` can circumvent running unaltered scripts, offering a
 significant speed boost by harnessing smart caching mechanisms.
 
-<https://github.com/oNaiPs/go-generate-fast/assets/374130/396a0160-90f8-46d0-a05c-783d127a384e>
+<https://github.com/minauteur/go-generate-fast/assets/374130/396a0160-90f8-46d0-a05c-783d127a384e>
 
 ## Features
 
@@ -31,7 +31,7 @@ significant speed boost by harnessing smart caching mechanisms.
 ## Install
 
 ```bash
-go install github.com/oNaiPs/go-generate-fast
+go install github.com/minauteur/go-generate-fast
 ```
 
 ## Usage

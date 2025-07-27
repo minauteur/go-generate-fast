@@ -13,7 +13,7 @@ resolver:
   package: generated
   filename_template: "{name}.resolvers.go"
 autobind:
- - "github.com/oNaiPs/go-generate-fast/e2e/gqlgen/graph/model"
+ - "github.com/minauteur/go-generate-fast/e2e/gqlgen/graph/model"
 models:
   ID:
     model:

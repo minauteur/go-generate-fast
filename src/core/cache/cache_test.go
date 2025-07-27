@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/oNaiPs/go-generate-fast/src/core/config"
-	"github.com/oNaiPs/go-generate-fast/src/plugins"
-	util_test "github.com/oNaiPs/go-generate-fast/src/test"
-	"github.com/oNaiPs/go-generate-fast/src/utils/hash"
+	"github.com/minauteur/go-generate-fast/src/core/config"
+	"github.com/minauteur/go-generate-fast/src/plugins"
+	util_test "github.com/minauteur/go-generate-fast/src/test"
+	"github.com/minauteur/go-generate-fast/src/utils/hash"
 	"github.com/stretchr/testify/assert"
 )
 
