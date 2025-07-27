@@ -4,8 +4,8 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/oNaiPs/go-generate-fast/src/plugins"
-	"github.com/oNaiPs/go-generate-fast/src/utils/pkg"
+	"github.com/minauteur/go-generate-fast/src/plugins"
+	"github.com/minauteur/go-generate-fast/src/utils/pkg"
 	"go.uber.org/zap"
 )
 

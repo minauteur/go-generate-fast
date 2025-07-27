@@ -6,8 +6,8 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/oNaiPs/go-generate-fast/src/core/golist"
-	"github.com/oNaiPs/go-generate-fast/src/plugins"
+	"github.com/minauteur/go-generate-fast/src/core/golist"
+	"github.com/minauteur/go-generate-fast/src/plugins"
 	"go.uber.org/zap"
 	"sigs.k8s.io/controller-tools/pkg/crd"
 	"sigs.k8s.io/controller-tools/pkg/deepcopy"
