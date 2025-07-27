@@ -20,7 +20,7 @@ func Init() {
 	} else {
 		zapConfig = zap.NewProductionConfig()
 	}
-
+	zapConfig.OutputPaths = []string{"stdout"}
 	zapConfig.Encoding = "console"
 	zapConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 	zapConfig.EncoderConfig.TimeKey = zapcore.OmitKey
