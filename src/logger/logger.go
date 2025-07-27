@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/oNaiPs/go-generate-fast/src/core/config"
+	"github.com/minauteur/go-generate-fast/src/core/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

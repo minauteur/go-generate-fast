@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -63,6 +64,7 @@ func Init() {
 	instance.ReCache = viper.GetBool("recache")
 	instance.ForceUseCache = viper.GetBool("force_use_cache")
 	instance.Debug = viper.GetBool("debug")
+	fmt.Println("Config initialized with values:", instance)
 }
 
 func CreateDirIfNotExists(path string) {
