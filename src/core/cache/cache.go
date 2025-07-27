@@ -224,6 +224,7 @@ func areOutputsMatching(outputFiles []CacheConfigOutputFileInfo, resultFiles []s
 }
 
 func calculateCacheDirectoryFromInputData(opts plugins.GenerateOpts, ioFiles plugins.InputOutputFiles) (string, error) {
+
 	contentToHash :=
 		opts.Dir() +
 			strings.Join(opts.Words, "\n") +
@@ -241,7 +242,7 @@ func calculateCacheDirectoryFromInputData(opts plugins.GenerateOpts, ioFiles plu
 	}
 
 	if opts.GoPackage == "" {
-		execInfo, err := getExecutableDetails(opts.ExecutableName)
+		execInfo, err := getExecutableDetails(opts.ExecutableName, false, false)
 		if err != nil {
 			return "", fmt.Errorf("cannot get path for executable '%s': %s", opts.ExecutableName, err)
 		}
@@ -256,7 +257,7 @@ func calculateCacheDirectoryFromInputData(opts plugins.GenerateOpts, ioFiles plu
 			contentToHash += hash
 		}
 	}
-
+	zap.S().Debugf("Final content to hash: %s", contentToHash)
 	finalHash, err := hash.HashString(contentToHash)
 	if err != nil {
 		return "", fmt.Errorf("cannot get final hash: %s", err)
@@ -271,7 +272,7 @@ func calculateCacheDirectoryFromInputData(opts plugins.GenerateOpts, ioFiles plu
 	return cacheHitDir, nil
 }
 
-func getExecutableDetails(ExecutablePath string) (string, error) {
+func getExecutableDetails(ExecutablePath string, includeModTime bool, includeSize bool) (string, error) {
 	ExecutablePath, err := fs.FindExecutablePath(ExecutablePath)
 	if err != nil {
 		return "", err
@@ -282,10 +283,13 @@ func getExecutableDetails(ExecutablePath string) (string, error) {
 		return "", err
 	}
 
-	execInfo := fmt.Sprint(
-		ExecutablePath,
-		fmt.Sprintf("%019d", info.Size()),
-		info.ModTime().Format(time.RFC3339))
+	execInfo := fmt.Sprint(ExecutablePath)
+	if includeSize {
+		execInfo += fmt.Sprintf("%019d", info.Size())
+	}
+	if includeModTime {
+		execInfo += info.ModTime().Format(time.RFC3339)
+	}
 
 	zap.S().Debugf("Exec info %s", execInfo)
 

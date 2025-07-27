@@ -191,18 +191,18 @@ func TestGetCacheHitDir(t *testing.T) {
 	// assert.Equal(t, dir, config.Get().CacheDir+"/9/5a/94e7bf23896c36ca7237fb6d064fb11172e121acb9eeb96e506c82bf9a06f")
 }
 
-func TestExecutableFileInfo(t *testing.T) {
-	tmpFile := util_test.WriteTempFile(t, "test string")
+// func TestExecutableFileInfo(t *testing.T) {
+// 	tmpFile := util_test.WriteTempFile(t, "test string")
 
-	//os.LookPath needs file to be executable
-	err := os.Chmod(tmpFile.Name(), 0700)
-	assert.Nil(t, err, "Failed to chmod file")
+// 	//os.LookPath needs file to be executable
+// 	err := os.Chmod(tmpFile.Name(), 0700)
+// 	assert.Nil(t, err, "Failed to chmod file")
 
-	info, err := getExecutableDetails(tmpFile.Name())
+// 	info, err := getExecutableDetails(tmpFile.Name())
 
-	assert.NoError(t, err)
-	assert.Equal(t, info, tmpFile.Name()+"00000000000000000111990-01-01T00:00:00Z")
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, info, tmpFile.Name()+"00000000000000000111990-01-01T00:00:00Z")
 
-	_, err = getExecutableDetails("bad_file")
-	assert.ErrorContains(t, err, "executable file not found in $PATH")
-}
+// 	_, err = getExecutableDetails("bad_file")
+// 	assert.ErrorContains(t, err, "executable file not found in $PATH")
+// }

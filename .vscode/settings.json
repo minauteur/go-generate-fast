@@ -1,3 +1,8 @@
 {
-    "go.buildTags": "test"
+    "go.buildTags": "test",
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#1F3318",
+        "titleBar.activeBackground": "#2B4721",
+        "titleBar.activeForeground": "#F7FBF6"
+    }
 }
