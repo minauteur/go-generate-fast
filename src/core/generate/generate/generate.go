@@ -303,8 +303,6 @@ func (g *Generator) run() (ok bool) {
 
 		if config.Get().Disable {
 			cachedInfo = append(cachedInfo, "disabled")
-		} else if cacheResult.PluginMatch == nil {
-			cachedInfo = append(cachedInfo, "noplugin")
 		}
 
 		cachedInfo = append(cachedInfo, fmt.Sprintf("%dms", time.Since(start).Milliseconds()))
@@ -318,7 +316,7 @@ func (g *Generator) run() (ok bool) {
 		if err != nil {
 			zap.S().Fatal("cannot compute relative dir: %s", err)
 		}
-		fmt.Printf("File: %s, Command: %s (%s)\n", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
+		zap.S().Infof("File: %s, Command: %s, Result: (%s)", relPath, opts.Command(), strings.Join(cachedInfo, ", "))
 
 	}
 
