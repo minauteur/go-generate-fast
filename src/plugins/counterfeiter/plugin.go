@@ -4,7 +4,6 @@ import (
 	"go/ast"
 	"go/token"
 	"os"
-	"path"
 	"regexp"
 	"strings"
 
@@ -14,13 +13,11 @@ import (
 )
 
 const genRegex = `\/\/counterfeiter:generate\s+(.+)`
-const pkgRegex = `^package\s+(\w+)`
 
-var genRe, pkgRe *regexp.Regexp
+var genRe *regexp.Regexp
 
 func init() {
 	genRe = regexp.MustCompile(genRegex)
-	pkgRe = regexp.MustCompile(pkgRegex)
 	plugins.RegisterPlugin(&CounterfeiterPlugin{})
 }
 
@@ -43,7 +40,6 @@ func (p *CounterfeiterPlugin) Matches(opts plugins.GenerateOpts) bool {
 func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts) *plugins.InputOutputFiles {
 	ioFiles := plugins.InputOutputFiles{}
 	files := map[string]bool{} // for tracking unique input files to prevent dupes
-	globs := map[string]bool{} // for tracking unique output globs to prevent dupes
 	// First, look for additional //counterfeiter:generate directives
 	bytes, err := os.ReadFile(opts.Path)
 	if err != nil {
@@ -73,7 +69,7 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 
 		// once we have the interface name, we can load the package directory and look for the file where it is declared
 		cfg := &packages.Config{
-			Mode: packages.LoadAllSyntax,
+			Mode: packages.NeedName | packages.NeedDeps | packages.NeedTypes | packages.NeedSyntax,
 			Dir:  opts.Dir(),
 			Fset: &token.FileSet{},
 		}
@@ -82,7 +78,7 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 			zap.S().Errorf("counterfeiter: cannot load packages in %s: %s", opts.Dir(), err)
 			return nil
 		}
-		globs[packages[0].Name+"fakes/*.go"] = true
+		ioFiles.OutputPatterns = []string{packages[0].Name + "fakes/*.go"}
 		foundInterfaceDecl := false
 	outer:
 		for _, file := range packages[0].Syntax {
@@ -91,7 +87,7 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 					return s == iFace
 				}); ok {
 					interfaceDeclaringFile := cfg.Fset.Position(decl.Pos()).Filename
-					zap.S().Debugf("counterfeiter: found interface %s in %s", iFace, path.Join(opts.Dir(), interfaceDeclaringFile))
+					zap.S().Debugf("counterfeiter: found interface %s in %s", iFace, interfaceDeclaringFile)
 					files[interfaceDeclaringFile] = true
 					foundInterfaceDecl = true
 					break outer
@@ -106,9 +102,6 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 	}
 	for filename := range files {
 		ioFiles.InputFiles = append(ioFiles.InputFiles, filename)
-	}
-	for pattern := range globs {
-		ioFiles.OutputPatterns = append(ioFiles.OutputPatterns, pattern)
 	}
 	zap.S().Debugf("counterfeiter: found %d input files and %d output patterns", len(ioFiles.InputFiles), len(ioFiles.OutputPatterns))
 	zap.S().Debugf("counterfeiter: input files: %s", strings.Join(ioFiles.InputFiles, ", "))
