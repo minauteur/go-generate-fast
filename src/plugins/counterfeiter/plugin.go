@@ -48,6 +48,18 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 		return nil
 	}
 
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedDeps | packages.NeedTypes | packages.NeedSyntax,
+		Dir:  opts.Dir(),
+		Fset: &token.FileSet{},
+	}
+	packages, err := packages.Load(cfg)
+	if err != nil {
+		zap.S().Errorf("counterfeiter: cannot load packages in %s: %s", opts.Dir(), err)
+		return nil
+	}
+	ioFiles.OutputPatterns = []string{packages[0].Name + "fakes/*.go"}
+
 	// then, look for the generate directives
 	interfaces := getInterfaceNames(opts, bytes)
 	wg := &sync.WaitGroup{}
@@ -55,26 +67,12 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 	wg.Add(len(interfaces))
 	zap.S().Debugf("counterfeiter: found %d interfaces to generate: %v", len(interfaces), interfaces)
 	for _, iFace := range interfaces {
-		go func(wg *sync.WaitGroup, iFace string, fCh chan<- string) {
+		go func(inFiles []*ast.File, iFace string, wg *sync.WaitGroup, fCh chan<- string) {
 			defer wg.Done()
 			// once we have the interface name, we can load the package directory and look for the file where it is declared
-			cfg := &packages.Config{
-				Mode: packages.NeedName | packages.NeedDeps | packages.NeedTypes | packages.NeedSyntax,
-				Dir:  opts.Dir(),
-				Fset: &token.FileSet{},
-			}
-			packages, err := packages.Load(cfg)
-			if err != nil {
-				zap.S().Errorf("counterfeiter: cannot load packages in %s: %s", opts.Dir(), err)
-				return
-			}
-			ioFiles.OutputPatterns = []string{packages[0].Name + "fakes/*.go"}
-
-			for _, file := range packages[0].Syntax {
+			for _, file := range inFiles {
 				for _, decl := range file.Decls {
-					if ok := ast.FilterDecl(decl, func(s string) bool {
-						return s == iFace
-					}); ok {
+					if isInterface(decl, iFace) {
 						interfaceDeclaringFile := cfg.Fset.Position(decl.Pos()).Filename
 						fCh <- interfaceDeclaringFile
 						zap.S().Debugf("counterfeiter: found interface %s in %s", iFace, interfaceDeclaringFile)
@@ -85,7 +83,7 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 
 			zap.S().Errorf("counterfeiter: cannot find interface %s in any file in %s", iFace, opts.Dir())
 
-		}(wg, iFace, fCh)
+		}(packages[0].Syntax, iFace, wg, fCh)
 	}
 	go func(w *sync.WaitGroup, fCh chan string) {
 		w.Wait()
@@ -124,4 +122,19 @@ func getInterfaceNames(opts plugins.GenerateOpts, b []byte) []string {
 		results = append(results, packageAndInterface[1])
 	}
 	return results
+}
+
+func isInterface(astDec ast.Decl, identifier string) bool {
+	if decl, ok := astDec.(*ast.GenDecl); ok {
+		for _, spec := range decl.Specs {
+			if t, ok := spec.(*ast.TypeSpec); ok {
+				if _, ok := t.Type.(*ast.InterfaceType); ok {
+					if t.Name.Name == identifier {
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
