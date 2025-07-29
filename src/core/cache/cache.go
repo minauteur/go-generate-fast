@@ -257,7 +257,6 @@ func calculateCacheDirectoryFromInputData(opts plugins.GenerateOpts, ioFiles plu
 			contentToHash += hash
 		}
 	}
-	zap.S().Debugf("Final content to hash: %s", contentToHash)
 	finalHash, err := hash.HashString(contentToHash)
 	if err != nil {
 		return "", fmt.Errorf("cannot get final hash: %s", err)

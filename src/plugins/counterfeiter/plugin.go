@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/minauteur/go-generate-fast/src/plugins"
 	"go.uber.org/zap"
@@ -48,8 +49,63 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 	}
 
 	// then, look for the generate directives
-	matches := genRe.FindAllStringSubmatch(string(bytes), -1)
+	interfaces := getInterfaceNames(opts, bytes)
+	wg := &sync.WaitGroup{}
+	fCh := make(chan string)
+	wg.Add(len(interfaces))
+	zap.S().Debugf("counterfeiter: found %d interfaces to generate: %v", len(interfaces), interfaces)
+	for _, iFace := range interfaces {
+		go func(wg *sync.WaitGroup, iFace string, fCh chan<- string) {
+			defer wg.Done()
+			// once we have the interface name, we can load the package directory and look for the file where it is declared
+			cfg := &packages.Config{
+				Mode: packages.NeedName | packages.NeedDeps | packages.NeedTypes | packages.NeedSyntax,
+				Dir:  opts.Dir(),
+				Fset: &token.FileSet{},
+			}
+			packages, err := packages.Load(cfg)
+			if err != nil {
+				zap.S().Errorf("counterfeiter: cannot load packages in %s: %s", opts.Dir(), err)
+				return
+			}
+			ioFiles.OutputPatterns = []string{packages[0].Name + "fakes/*.go"}
 
+			for _, file := range packages[0].Syntax {
+				for _, decl := range file.Decls {
+					if ok := ast.FilterDecl(decl, func(s string) bool {
+						return s == iFace
+					}); ok {
+						interfaceDeclaringFile := cfg.Fset.Position(decl.Pos()).Filename
+						fCh <- interfaceDeclaringFile
+						zap.S().Debugf("counterfeiter: found interface %s in %s", iFace, interfaceDeclaringFile)
+						return
+					}
+				}
+			}
+
+			zap.S().Errorf("counterfeiter: cannot find interface %s in any file in %s", iFace, opts.Dir())
+
+		}(wg, iFace, fCh)
+	}
+	go func(w *sync.WaitGroup, fCh chan string) {
+		w.Wait()
+		close(fCh)
+	}(wg, fCh)
+	for filename := range fCh {
+		files[filename] = true
+	}
+	for file := range files {
+		ioFiles.InputFiles = append(ioFiles.InputFiles, file)
+	}
+	zap.S().Debugf("counterfeiter: found %d input files and %d output patterns", len(ioFiles.InputFiles), len(ioFiles.OutputPatterns))
+	zap.S().Debugf("counterfeiter: input files: %s", strings.Join(ioFiles.InputFiles, ", "))
+	zap.S().Debugf("counterfeiter: output patterns: %s", strings.Join(ioFiles.OutputPatterns, ", "))
+	return &ioFiles
+}
+
+func getInterfaceNames(opts plugins.GenerateOpts, b []byte) []string {
+	results := []string{}
+	matches := genRe.FindAllStringSubmatch(string(b), -1)
 	for _, match := range matches {
 		if len(match) != 2 {
 			zap.S().Errorf("counterfeiter: invalid directive in %s: %s", opts.Path, strings.Join(match, " "))
@@ -65,46 +121,7 @@ func (p *CounterfeiterPlugin) ComputeInputOutputFiles(opts plugins.GenerateOpts)
 			zap.S().Errorf("counterfeiter: package %s is not supported, only current package (.) is allowed", pkg)
 			return nil
 		}
-		iFace := packageAndInterface[1]
-
-		// once we have the interface name, we can load the package directory and look for the file where it is declared
-		cfg := &packages.Config{
-			Mode: packages.NeedName | packages.NeedDeps | packages.NeedTypes | packages.NeedSyntax,
-			Dir:  opts.Dir(),
-			Fset: &token.FileSet{},
-		}
-		packages, err := packages.Load(cfg)
-		if err != nil {
-			zap.S().Errorf("counterfeiter: cannot load packages in %s: %s", opts.Dir(), err)
-			return nil
-		}
-		ioFiles.OutputPatterns = []string{packages[0].Name + "fakes/*.go"}
-		foundInterfaceDecl := false
-	outer:
-		for _, file := range packages[0].Syntax {
-			for _, decl := range file.Decls {
-				if ok := ast.FilterDecl(decl, func(s string) bool {
-					return s == iFace
-				}); ok {
-					interfaceDeclaringFile := cfg.Fset.Position(decl.Pos()).Filename
-					zap.S().Debugf("counterfeiter: found interface %s in %s", iFace, interfaceDeclaringFile)
-					files[interfaceDeclaringFile] = true
-					foundInterfaceDecl = true
-					break outer
-				}
-			}
-		}
-		if !foundInterfaceDecl {
-			zap.S().Errorf("counterfeiter: cannot find interface %s in any file in %s", iFace, opts.Dir())
-			return nil
-		}
-
+		results = append(results, packageAndInterface[1])
 	}
-	for filename := range files {
-		ioFiles.InputFiles = append(ioFiles.InputFiles, filename)
-	}
-	zap.S().Debugf("counterfeiter: found %d input files and %d output patterns", len(ioFiles.InputFiles), len(ioFiles.OutputPatterns))
-	zap.S().Debugf("counterfeiter: input files: %s", strings.Join(ioFiles.InputFiles, ", "))
-	zap.S().Debugf("counterfeiter: output patterns: %s", strings.Join(ioFiles.OutputPatterns, ", "))
-	return &ioFiles
+	return results
 }
