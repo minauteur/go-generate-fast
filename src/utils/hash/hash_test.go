@@ -3,7 +3,7 @@ package hash
 import (
 	"testing"
 
-	util_test "github.com/oNaiPs/go-generate-fast/src/test"
+	util_test "github.com/minauteur/go-generate-fast/src/test"
 	"github.com/stretchr/testify/assert"
 )
 

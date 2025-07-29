@@ -5,7 +5,7 @@ import (
 	"path"
 	"testing"
 
-	"github.com/oNaiPs/go-generate-fast/src/plugins"
+	"github.com/minauteur/go-generate-fast/src/plugins"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

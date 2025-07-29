@@ -1,6 +1,6 @@
 package plugin_example
 
-import "github.com/oNaiPs/go-generate-fast/src/plugins"
+import "github.com/minauteur/go-generate-fast/src/plugins"
 
 type ExamplePlugin struct {
 	plugins.Plugin

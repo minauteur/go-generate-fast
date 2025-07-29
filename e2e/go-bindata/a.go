@@ -1,3 +1,0 @@
-package gobindata
-
-//go:generate go run github.com/go-bindata/go-bindata/... -o static.go -ignore static.go -pkg gobindata ./static/...
